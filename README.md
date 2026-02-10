@@ -1,2 +1,2 @@
 # Team1
-Team one repository. Modify this after project is decided.
+Team one repository. Quadrupedal robot controlled with Reinforcement Learning.
