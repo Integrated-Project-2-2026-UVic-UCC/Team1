@@ -4,7 +4,7 @@
 
 > Houses the nervous system of the robot.
 > *   **Schematics:** Wiring diagrams and connection maps.
-> *   **PCB Design:** KiCad/Eagle files for custom boards.
+> *   **PCB Design:** EasyEDA files for custom boards.
 > *   **BOM:** Bill of Materials (Sensors, Actuators, Microcontrollers, Batteries).
 
 <br>
