@@ -78,14 +78,14 @@ This project follows a multidisciplinary approach, divided into three main pilla
 
 <div align="center">
 
-### 3. 💻 Programming
-**`./Programming`**
+### 3. 💻 Software
+**`./Software`**
 </div>
 
 > The brain of the project, split into low-level control and high-level AI.
 > *   **Firmware:** Code for the microcontrollers (motor drivers, IMU data reading).
-> *   **Reinforcement Learning:** ROS2 Control nodes, and training environments.
-> *   **Control:** Inverse kinematics and gait planning algorithms.
+> *   **Reinforcement Learning:** MuJoCo training environments, generated control models.
+> *   **Control:** ROS2 control packeges, inverse kinematics and gait planning algorithms.
 
 ---
 
