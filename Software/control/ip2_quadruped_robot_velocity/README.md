@@ -4,7 +4,9 @@
 Proyecto de simulación y entrenamiento por Aprendizaje por Refuerzo (Reinforcement Learning) para un robot cuadrúpedo custom impreso en 3D. El entorno está construido sobre **MuJoCo** utilizando el framework acelerado por GPU **mjlab**.
 
 ### 🏃‍♂️ Locomotion Demo
-![Demo del robot caminando](demos/Screencast from 16-03-26 10_20_32.gif)
+![Demo del robot caminando](demos/train-16-03-26-10_20_32.gif)
+![Graficos rewards Wandb.ai](demos/wandb-stats-16-03-26.png)
+
 
 ---
 
