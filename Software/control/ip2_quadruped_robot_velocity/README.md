@@ -3,7 +3,8 @@
 Reinforcement Learning (RL) simulation and training project for a custom 3D-printed quadruped robot. The environment is built on **MuJoCo** using the GPU-accelerated **mjlab** framework.
 
 ### 🏃‍♂️ Locomotion Demo
-**Robot Locomotion Demo**
+**Robot Locomotion Demo**  
+
 ![Robot Locomotion Demo](demos/train-16-03-26-10_20_32.gif)
 
 **WandB Reward Statistics**
@@ -29,6 +30,8 @@ The `quadruped_robot.xml` and its constants are rigorously modeled after our phy
 
 Ensure you have the `uv` package manager installed.
 
-**1. Install the environment in editable mode:**
+**1. Install all the dependencies**
 ```bash
-uv pip install -e .
+uv sync
+```
+**2. Train and play**
