@@ -56,11 +56,6 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     #####################
 
     policy_terms = {
-        "base_lin_vel": ObservationTermCfg(
-        func=mdp.builtin_sensor,
-        params={"sensor_name": "robot/imu_lin_vel"},
-        noise=Unoise(n_min=-0.5, n_max=0.5),
-        ),
         "base_ang_vel": ObservationTermCfg(
         func=mdp.builtin_sensor,
         params={"sensor_name": "robot/imu_ang_vel"},
@@ -74,7 +69,7 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         func=mdp.joint_pos_rel,
         noise=Unoise(n_min=-0.01, n_max=0.01),
         ),
-        "joint_vel": ObservationTermCfg(
+        "joint_vel": ObservationTermCfg( # TODO pendiente de validacion
         func=mdp.joint_vel_rel,
         noise=Unoise(n_min=-1.5, n_max=1.5),
         ),
@@ -105,7 +100,7 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         ),
     }
 
-    observations = {
+    cfg.observations = {    # para usar la default, quitar el cfg.
         "policy": ObservationGroupCfg(
         terms=policy_terms,
         concatenate_terms=True,
@@ -170,16 +165,16 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       weight=0.0,  # Override per-robot
       params={"asset_cfg": SceneEntityCfg("robot", body_names=("trunk",))},  # Set per-robot.
     ),
-    "angular_momentum": RewardTermCfg(
-      func=mdp.angular_momentum_penalty,
-      weight=0.0,  # Override per-robot
-      params={"sensor_name": "robot/root_angmom"},
-    ),
+    # "angular_momentum": RewardTermCfg(
+    #   func=mdp.angular_momentum_penalty,
+    #   weight=0.0,  # Override per-robot
+    #   params={"sensor_name": "robot/root_angmom"},
+    # ),
     "dof_pos_limits": RewardTermCfg(func=mdp.joint_pos_limits, weight=0.0), #was negative
     "action_rate_l2": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.1),
     "air_time": RewardTermCfg(
       func=mdp.feet_air_time,
-      weight=0.0,  # Override per-robot.
+      weight=1.0,  # Override per-robot. deafult 0.0
       params={
         "sensor_name": "feet_ground_contact",
         "threshold_min": 0.05,
@@ -188,27 +183,27 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "command_threshold": 0.5,
       },
     ),
-    "foot_clearance": RewardTermCfg(
-      func=mdp.feet_clearance,
-      weight=0.0,
-      params={
-        "target_height": 0.1,
-        "command_name": "twist",
-        "command_threshold": 0.05,
-        "asset_cfg": SceneEntityCfg("robot", site_names=site_names),  # Set per-robot.
-      },
-    ),
-    "foot_swing_height": RewardTermCfg(
-      func=mdp.feet_swing_height,
-      weight=0.0, #was negative
-      params={
-        "sensor_name": "feet_ground_contact",
-        "target_height": 0.1,
-        "command_name": "twist",
-        "command_threshold": 0.05,
-        "asset_cfg": SceneEntityCfg("robot", site_names=site_names),  # Set per-robot.
-      },
-    ),
+    # "foot_clearance": RewardTermCfg(
+    #   func=mdp.feet_clearance,
+    #   weight=0.0,
+    #   params={
+    #     "target_height": 0.1,
+    #     "command_name": "twist",
+    #     "command_threshold": 0.05,
+    #     "asset_cfg": SceneEntityCfg("robot", site_names=site_names),  # Set per-robot.
+    #   },
+    # ),
+    # "foot_swing_height": RewardTermCfg(
+    #   func=mdp.feet_swing_height,
+    #   weight=0.0, #was negative
+    #   params={
+    #     "sensor_name": "feet_ground_contact",
+    #     "target_height": 0.1,
+    #     "command_name": "twist",
+    #     "command_threshold": 0.05,
+    #     "asset_cfg": SceneEntityCfg("robot", site_names=site_names),  # Set per-robot.
+    #   },
+    # ),
     "foot_slip": RewardTermCfg(
       func=mdp.feet_slip,
       weight=0.0, #was negative
