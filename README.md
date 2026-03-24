@@ -2,7 +2,7 @@
 <div align="center">
   
   <br>
-  <h1>🐕 Autonomous Quadrupedal Robot</h1>
+  <h1>🐕 Quad-Bot</h1>
   <p>
     <b>Design. Build. Train.</b> <br>
     A Mechatronics Engineering project exploring Reinforcement Learning in Robotics.
@@ -37,9 +37,8 @@ The main objective is to **design, build, and train** a quadrupedal robot capabl
 
 | Feature | Description |
 | :--- | :--- |
-| 🔋 **Autonomy** | Battery life optimized for comfortable use and extended testing sessions. |
+| 🔋 **Autonomy** | Transformer alimentation for continous power supply during operation. |
 | ⚖️ **Balance** | Robust dynamic balance control to handle uneven surfaces. |
-| 🌊 **Fluency** | Smooth, natural gait generation similar to biological counterparts. |
 | 📦 **Design** | Compact, lightweight, yet structurally sound mechanical design. |
 | 🛡️ **Durability** | High robustness to withstand the physical stress of learning (falling and recovering). |
 
@@ -57,9 +56,9 @@ This project follows a multidisciplinary approach, divided into three main pilla
 </div>
 
 > Contains all the hardware design files necessary to build the physical robot.
-> *   **CAD Models:** SolidWorks/Fusion360 source files.
-> *   **3D Printing:** `.STL` files ready for slicing.
-> *   **Simulation:** URDF/Meshes for simulation environments (Gazebo/PyBullet).
+> *   **CAD Models:** `PTC Creo` source files.
+> *   **3D Printing:** `.STP` files ready for slicing.
+> *   **Simulation:** URDF/Meshes for simulation environments (MuJoCo).
 
 <br>
 
@@ -83,9 +82,9 @@ This project follows a multidisciplinary approach, divided into three main pilla
 </div>
 
 > The brain of the project, split into low-level control and high-level AI.
-> *   **Firmware:** Code for the microcontrollers (motor drivers, IMU data reading).
+> *   **Firmware:** Code for the microcontrollers (motor drivers, IMU data reading). Comunication with control via Wifi. Muticore task management.
 > *   **Reinforcement Learning:** MuJoCo training environments, generated control models.
-> *   **Control:** ROS2 control packeges, inverse kinematics and gait planning algorithms.
+> *   **Control:** ROS2 packeges, inverse kinematics and gait planning algorithms.
 
 ---
 
