@@ -119,19 +119,11 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ].geom_names = geom_names  # que partes necesitan friccion, los pies
     cfg.events["base_com"].params["asset_cfg"].body_names = ("trunk",)
 
-    # # 4. LIMPIEZA AGRESIVA DE RECOMPENSAS (Rewards)
-    # # Eliminamos las que causan el error de tensores (12 vs 0) #solucionat afegint std rewards
-    # # y las que buscan nombres de sitios o joints del Go1
-    # problematic_rewards = ["pose", "foot_clearance", "foot_swing_height", "foot_slip", "joint_pos", "air_time"]
-    # for r in problematic_rewards:
-    #     if r in cfg.rewards:
-    #         cfg.rewards.pop(r)
 
-    #TODO: experimentar amb rewards
     cfg.rewards = {
     "track_linear_velocity": RewardTermCfg(
       func=mdp.track_linear_velocity,
-      weight=5.0,
+      weight=2.0, 
       params={"command_name": "twist", "std": math.sqrt(0.25)},
     ),
     "track_angular_velocity": RewardTermCfg( #do not spin for the moment
@@ -141,7 +133,7 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "upright": RewardTermCfg(
       func=mdp.flat_orientation,
-      weight=0.5,
+      weight=1.0,
       params={
         "std": math.sqrt(0.2),
         "asset_cfg": SceneEntityCfg("robot", body_names=("trunk",)),  # Set per-robot.
@@ -149,7 +141,7 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "pose": RewardTermCfg(
       func=mdp.variable_posture,
-      weight=0.0,
+      weight=1.0,
       params={
         "asset_cfg": SceneEntityCfg("robot", joint_names=(".*",)),
         "command_name": "twist",
@@ -170,11 +162,11 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     #   weight=0.0,  # Override per-robot
     #   params={"sensor_name": "robot/root_angmom"},
     # ),
-    "dof_pos_limits": RewardTermCfg(func=mdp.joint_pos_limits, weight=0.0), #was negative
+    "dof_pos_limits": RewardTermCfg(func=mdp.joint_pos_limits, weight=-0.1), #was negative
     "action_rate_l2": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.1),
     "air_time": RewardTermCfg(
       func=mdp.feet_air_time,
-      weight=1.0,  # Override per-robot. deafult 0.0
+      weight=2.0,  # Override per-robot. deafult 0.0
       params={
         "sensor_name": "feet_ground_contact",
         "threshold_min": 0.05,
@@ -216,7 +208,7 @@ def quad_bot_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "soft_landing": RewardTermCfg(
       func=mdp.soft_landing,
-      weight=-1e-5,
+      weight=1e-5,
       params={
         "sensor_name": "feet_ground_contact",
         "command_name": "twist",
