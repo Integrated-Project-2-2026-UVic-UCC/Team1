@@ -33,7 +33,7 @@ base_motor_cfg= DcMotorActuatorCfg(
     frictionloss=0.5#0.02
 )
 
-QUAD_BOT_ACTUATOR_CFG = DelayedActuatorCfg( #NICO: afegir delay per tenir en compte a la simulació (latencia)
+QUAD_BOT_ACTUATOR_CFG = DelayedActuatorCfg(
     base_cfg=base_motor_cfg,
     delay_min_lag=1, #unos 70ms
     delay_max_lag=14, #timestep 0.005s, por 14 son 70ms
@@ -49,7 +49,6 @@ INIT_STATE = EntityCfg.InitialStateCfg(
        },
 )
 
-# NICO:collision config
 _foot_regex = r".*_foot_collision$"
 FULL_COLLISION = CollisionCfg(
     geom_names_expr=(r".*_collision$", _foot_regex),
