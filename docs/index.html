@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quad-Bot — Reinforcement Learning</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Space+Grotesk:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050505;
+      --surface: #0e0e0e;
+      --surface-2: #161616;
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.15);
+      --accent: #e63946;
+      --accent-dim: rgba(230,57,70,0.12);
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --text-subtle: #555;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+      --radius: 12px;
+      --nav-h: 60px;
+      --sidebar-w: 260px;
+    }
+
+    body.light {
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --surface-2: #ececec;
+      --border: rgba(0,0,0,0.1);
+      --border-hover: rgba(0,0,0,0.2);
+      --text: #e63946;
+      --text-muted: #c0392b;
+      --text-subtle: #aaa;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-weight: 300;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 48px);
+      max-width: 960px;
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: rgba(15,15,15,0.45);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      z-index: 1000;
+      transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+    }
+    body.light .navbar { background: rgba(245,245,245,0.75); }
+    .navbar.hidden { transform: translate(-50%, -150%); opacity: 0; pointer-events: none; }
+
+    .nav-left { display: flex; align-items: center; gap: 10px; }
+
+    .hamburger {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.2s;
+      flex-shrink: 0;
+    }
+    body.light .hamburger { background: rgba(0,0,0,0.07); }
+    .hamburger:hover { background: var(--accent); color: #fff; transform: scale(1.08); }
+    .hamburger svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+    }
+    body.light .nav-logo { color: #111; }
+    .nav-logo-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-link {
+      background: none; border: none;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 20px;
+      transition: color 0.2s, background 0.2s;
+      letter-spacing: 0.2px;
+    }
+    .nav-link:hover { color: var(--accent); background: var(--accent-dim); }
+    .nav-link.active { color: var(--accent); }
+
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+
+    .repo-link {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+      text-decoration: none;
+    }
+    body.light .repo-link { background: rgba(0,0,0,0.07); color: #111; }
+    .repo-link:hover { background: var(--accent); color: #fff; transform: scale(1.08); }
+    .repo-link svg { width: 18px; height: 18px; fill: currentColor; }
+
+    /* ── SIDEBAR ── */
+    .sidebar-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 1100;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .sidebar-overlay.open { opacity: 1; pointer-events: all; }
+
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: rgba(12,12,12,0.92);
+      backdrop-filter: blur(32px) saturate(180%);
+      -webkit-backdrop-filter: blur(32px) saturate(180%);
+      border-right: 1px solid var(--border);
+      z-index: 1200;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 20px;
+      transform: translateX(-110%);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    body.light .sidebar { background: rgba(248,248,248,0.97); }
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 36px;
+    }
+    .sidebar-logo {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text);
+    }
+    body.light .sidebar-logo { color: #111; }
+
+    .sidebar-close {
+      width: 32px; height: 32px;
+      border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+      font-size: 16px;
+    }
+    body.light .sidebar-close { background: rgba(0,0,0,0.07); color: #555; }
+    .sidebar-close:hover { background: var(--accent); color: #fff; }
+
+    .sidebar-section-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-subtle);
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 32px;
+    }
+    .sidebar-link {
+      background: none; border: none;
+      text-align: left;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 14px; font-weight: 400;
+      cursor: pointer;
+      padding: 9px 12px;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    body.light .sidebar-link:hover { background: rgba(0,0,0,0.05); color: #111; }
+    .sidebar-link.active { color: var(--accent); background: var(--accent-dim); font-weight: 500; }
+    .sidebar-link-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+    .sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0 20px; }
+
+    /* Theme toggle */
+    .theme-toggle {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 14px;
+      transition: background 0.2s, color 0.2s;
+      width: 100%;
+      text-align: left;
+    }
+    .theme-toggle:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    body.light .theme-toggle:hover { background: rgba(0,0,0,0.05); color: #111; }
+    .theme-icon { font-size: 15px; }
+
+    .sidebar-bottom { margin-top: auto; }
+
+    /* ── LAYOUT ── */
+    .main-content {
+      padding-top: calc(var(--nav-h) + 64px);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 720px;
+      padding: 0 24px 120px;
+      animation: pageIn 0.45s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── TYPOGRAPHY ── */
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 20px;
+      opacity: 0.85;
+    }
+
+    .title {
+      font-family: var(--font-display);
+      font-size: 56px;
+      font-weight: 700;
+      line-height: 1.0;
+      letter-spacing: -1.5px;
+      margin-bottom: 28px;
+      color: var(--text);
+    }
+    body.light .title { color: #111; }
+    body.light .title span { color: var(--accent) !important; }
+
+    .lead {
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--text-muted);
+      line-height: 1.65;
+      margin-bottom: 56px;
+      max-width: 520px;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      margin: 52px 0 14px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    body.light .section-title { color: #111; }
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px; height: 14px;
+      background: var(--accent);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .paragraph {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.75;
+      margin-bottom: 20px;
+      font-weight: 300;
+    }
+    .paragraph strong { color: var(--text); font-weight: 500; }
+    body.light .paragraph strong { color: #222; }
+    .paragraph code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    body.light .paragraph code { background: rgba(0,0,0,0.05); }
+
+    /* ── HOME CARDS ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      cursor: pointer;
+      transition: border-color 0.25s, background 0.25s, transform 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 70% 30%, var(--accent-dim) 0%, transparent 65%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .card:hover { border-color: var(--border-hover); background: var(--surface-2); transform: translateY(-1px); }
+    .card:hover::after { opacity: 1; }
+
+    .card-num { font-family: var(--font-mono); font-size: 10px; color: var(--text-subtle); letter-spacing: 1px; margin-bottom: 12px; }
+    .card-title { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.2px; color: var(--text); }
+    body.light .card-title { color: #111; }
+    .card-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; font-weight: 300; }
+    .card-arrow { position: absolute; bottom: 20px; right: 20px; color: var(--text-subtle); font-size: 16px; transition: color 0.25s, transform 0.25s; }
+    .card:hover .card-arrow { color: var(--accent); transform: translate(2px, -2px); }
+
+    /* ── MEMBERS SECTION ── */
+    .members-section { margin-top: 80px; }
+    .members-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }
+
+    .member-card {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      text-decoration: none;
+      color: var(--text-muted);
+      transition: border-color 0.25s, background 0.25s, color 0.2s, transform 0.2s;
+    }
+    .member-card:hover { border-color: var(--accent); background: var(--surface-2); color: var(--accent); transform: translateY(-1px); }
+
+    .member-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .member-name { font-family: var(--font-display); font-size: 14px; font-weight: 500; }
+    body.light .member-name { color: #111; }
+    .member-card:hover .member-name { color: var(--accent); }
+    .member-github { font-family: var(--font-mono); font-size: 10px; color: var(--text-subtle); margin-top: 2px; }
+    .member-role { font-family: var(--font-mono); font-size: 11px; color: var(--accent); margin-top: 2px; }
+
+    /* ── DIVIDER ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex; gap: 0;
+      background: var(--surface);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 40px;
+      width: fit-content;
+    }
+    .tab {
+      padding: 7px 18px; border-radius: 6px; border: none;
+      background: none; color: var(--text-muted);
+      cursor: pointer; font-family: var(--font-body); font-size: 13px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .tab.active { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+    body.light .tab.active { color: #111; }
+
+    /* ── TERMINAL ── */
+    .terminal { border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.09); margin-bottom: 14px; box-shadow: 0 14px 28px rgba(0,0,0,0.4); }
+    .terminal-bar { background: #1c1c1e; padding: 8px 14px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .t-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .t-dot.red { background: #ff5f57; }
+    .t-dot.yellow { background: #febc2e; }
+    .t-dot.green { background: #28c840; }
+    .terminal-title { font-family: var(--font-mono); font-size: 10px; color: #666; margin: 0 auto; letter-spacing: 0.5px; }
+    .terminal-body { background: #101012; padding: 16px 20px; overflow-x: auto; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; color: #c8d0d8; white-space: pre; }
+    .terminal-body::-webkit-scrollbar { height: 4px; }
+    .terminal-body::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+    .t-cmd { color: var(--accent); }
+    .t-prompt { color: #555; user-select: none; }
+    .t-str { color: #9fd9a7; }
+    .t-kw { color: #82b8e8; }
+    .t-fn { color: #d4a8f0; }
+    .t-num { color: #f0c060; }
+
+    /* ── STATUS BADGE ── */
+    .status-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,136,255,0.08); padding: 8px 16px; border-radius: 50px; border: 1px solid rgba(0,136,255,0.2); color: #0088ff; font-size: 12px; font-family: var(--font-mono); margin-top: 12px; }
+    .status-pulse { width: 7px; height: 7px; border-radius: 50%; background: #0088ff; animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,136,255,0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(0,136,255,0); }
+    }
+
+    /* ── INFO ROW ── */
+    .info-row { display: flex; gap: 32px; padding: 24px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 40px 0; }
+    .info-item { display: flex; flex-direction: column; gap: 4px; }
+    .info-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 1.5px; }
+    .info-value { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+    body.light .info-value { color: #111; }
+    .info-value span { color: var(--accent); }
+
+    /* ── BULLET LIST ── */
+    .bullet-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .bullet-item { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+    .bullet-icon { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 8px; flex-shrink: 0; }
+    .bullet-item strong { color: var(--text); font-weight: 500; }
+    body.light .bullet-item strong { color: #222; }
+
+    @media (max-width: 700px) {
+      .navbar { width: calc(100% - 32px); padding: 0 14px; }
+      .nav-links { display: none; }
+      .page { padding-left: 20px; padding-right: 20px; }
+      .title { font-size: 40px; letter-spacing: -1px; }
+      .grid, .members-grid { grid-template-columns: 1fr; }
+      .info-row { flex-wrap: wrap; gap: 20px; }
+    }
+/* ── CAROUSEL ── */
+.carousel { position: relative; width: 100%; margin: 28px 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border);}
+.carousel-track { display: flex; transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); }
+.carousel-slide { min-width: 100%; }
+.carousel-slide img, .carousel-slide gif { width: 100%; display: block; max-height: 420px; object-fit: contain; }
+.carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 10; }
+.carousel-nav:hover { background: var(--accent); }
+.carousel-nav.prev { left: 10px; }
+.carousel-nav.next { right: 10px; }
+.carousel-dots { display: flex; justify-content: center; gap: 6px; padding: 10px 0 12px; background: var(--surface); }
+.carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-subtle); border: none; cursor: pointer; padding: 0; transition: background 0.2s, transform 0.2s; }
+.carousel-dot.active { background: var(--accent); transform: scale(1.3); }
+.carousel-caption { font-family: var(--font-mono); font-size: 10px; color: var(--text-subtle); text-align: center; padding: 0 0 10px; letter-spacing: 0.5px; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const NAV = [
+  { id: "mechanics",   label: "Mechanics"   },
+  { id: "electronics", label: "Electronics" },
+  { id: "software",    label: "Software"    },
+  { id: "management",  label: "Management"  },
+];
+
+const MEMBERS = [
+  { name: "Nico Alcaraz",         initials: "NA", role: "Team Manager/Low-Level Software",  github: "nllortfer",         url: "https://github.com/nllortfer" },
+  { name: "Daniel Picazo",        initials: "DP", role: "Electronics",         github: "DaniPic-05",        url: "https://github.com/DaniPic-05" },
+  { name: "Guillem de las Muelas",initials: "GM", role: "High-Level Software", github: "GuilleMuac2",       url: "https://github.com/GuilleMuac2" },
+  { name: "Jan Martinez",         initials: "JM", role: "Mechanics",           github: "JanMartinezFerrer", url: "https://github.com/JanMartinezFerrer" },
+];
+
+function Terminal({ title = "bash", children }) {
+  return (
+    <div className="terminal">
+      <div className="terminal-bar">
+        <div className="t-dot red"/><div className="t-dot yellow"/><div className="t-dot green"/>
+        <span className="terminal-title">{title}</span>
+      </div>
+      <div className="terminal-body">{children}</div>
+    </div>
+  );
+}
+function Carousel({ slides }) {
+  const [i, setI] = useState(0);
+  const prev = () => setI(n => (n - 1 + slides.length) % slides.length);
+  const next = () => setI(n => (n + 1) % slides.length);
+  return (
+    <div className="carousel">
+      <div className="carousel-track" style={{transform:`translateX(-${i*100}%)`}}>
+        {slides.map((s, idx) => (
+          <div className="carousel-slide" key={idx}>
+            <img src={s.src} alt={s.caption} />
+          </div>
+        ))}
+      </div>
+      {slides.length > 1 && <>
+        <button className="carousel-nav prev" onClick={prev}>‹</button>
+        <button className="carousel-nav next" onClick={next}>›</button>
+      </>}
+      <div className="carousel-dots">
+        {slides.map((_,idx) => <button key={idx} className={`carousel-dot ${idx===i?'active':''}`} onClick={()=>setI(idx)}/>)}
+      </div>
+      {slides[i].caption && <div className="carousel-caption">{slides[i].caption}</div>}
+    </div>
+  );
+}
+
+
+function PageHome({ navigate }) {
+  const cards = [
+    { id:"mechanics",   num:"01", title:"Mechanics",   desc:"12-DoF, internal transformer, 2.5kg load." },
+    { id:"electronics", num:"02", title:"Electronics", desc:"ESP32-S3 logic, AS5600L encoders, MPU9250." },
+    { id:"software",    num:"03", title:"Software",    desc:"Actor-Critic RL, ONNX, Zenoh-DDS, Firmware." },
+    { id:"management",  num:"04", title:"Management",  desc:"Scrum workflow, cross-functional synergies." },
+  ];
+  return (
+    <div className="page">
+      <div className="eyebrow">Mechatronics Engineering</div>
+      <h1 className="title">Quad<span style={{color:'var(--accent)'}}>Bot</span></h1>
+      <p className="lead">A quadrupedal robot capable of autonomous locomotion controlled entirely through Reinforcement Learning.</p>
+      <h2 className="section-title">Objectives</h2>
+<p className="paragraph">This project encompasses the design, construction, and training of a <strong>quadrupedal robot</strong> capable of achieving fluent autonomous locomotion, including forward, backward, and rotational movements. The prototype is engineered to support a total payload of up to 2.5kg and features a pluggable power system for unlimited operational autonomy. The architecture integrates both radio-controlled manual override and intelligent autonomous navigation powered by <strong>Reinforcement Learning</strong>.</p>
+<h2 className="section-title">Sections</h2>
+<div className="grid">
+        {cards.map(c => (
+          <div className="card" key={c.id} onClick={() => navigate(c.id)}>
+            <div className="card-num">{c.num}</div>
+            <div className="card-title">{c.title}</div>
+            <div className="card-text">{c.desc}</div>
+            <div className="card-arrow">↗</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="members-section">
+        <h2 className="section-title">Members</h2>
+	<div className="members-grid">
+          {MEMBERS.map(m => (
+            <a key={m.github} href={m.url} target="_blank" rel="noreferrer" className="member-card">
+              <div className="member-avatar">{m.initials}</div>
+              <div>
+                <div className="member-name">{m.name}</div>
+                <div className="member-role">{m.role}</div>
+                <div className="member-github">@{m.github}</div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PageMechanics() {
+  return (
+    <div className="page">
+      <div className="eyebrow">01 / Mechanics</div>
+      <h1 className="title" style={{fontSize:'40px'}}>Mechanics</h1>
+      <div className="info-row">
+        <div className="info-item"><span className="info-label">Payload</span><span className="info-value">2.5<span>kg</span></span></div>
+        <div className="info-item"><span className="info-label">Degrees of Freedom</span><span className="info-value">12<span>DoF</span></span></div>
+        <div className="info-item"><span className="info-label">Stall Torque</span><span className="info-value">2.45<span> N·m</span></span></div>
+      </div>
+      <h2 className="section-title">Dessign</h2>
+      <p className="paragraph">CAD dessign is performed using <strong>PTC Creo</strong> environment. All the single parts of the project and assemblies are done there. On the other hand, the model required for simulations is made in a conventional <code>.xml</code> file, as it is the required format for <strong>mjlab</strong>.</p>
+      <h2 className="section-title">Chassis & Payload</h2>
+      <p className="paragraph">The prototype features a rigid central chassis supporting a total load of up to <strong>2.5 kg</strong>. Instead of relying on a heavy onboard battery for continuous training, the chassis integrates an internal <strong>transformer</strong> to allow unlimited tethered operation during the learning phase.</p>
+      <h2 className="section-title">Kinematics & Linkages (12 DoF)</h2>
+      <p className="paragraph">Each leg has 3 Degrees of Freedom (DoF). To maximize leg speed and reduce mass at the extremities, actuators are concentrated in the hips. We use <strong>rod-linkage transmissions</strong> to actuate the knee joints, severely minimizing leg inertia for highly dynamic locomotion.</p>
+      <h2 className="section-title">Images</h2>
+	<Carousel slides={[
+  { src:"images/robot-assembly.png", caption:"Full robot assembly — PTC Creo" },
+  { src:"images/leg-assembly.png",   caption:"Single leg assembly — rod-linkage detail" },
+]} />
+    </div>
+  );
+}
+
+function PageElectronics() {
+  return (
+    <div className="page">
+      <div className="eyebrow">02 / Electronics</div>
+      <h1 className="title" style={{fontSize:'40px'}}>Electronics</h1>
+      <div className="info-row">
+        <div className="info-item"><span className="info-label">MCU</span><span className="info-value" style={{fontSize:'18px',paddingTop:'4px'}}>ESP32<span>-S3</span></span></div>
+        <div className="info-item"><span className="info-label">Encoder</span><span className="info-value" style={{fontSize:'18px',paddingTop:'4px'}}>AS5600<span>L</span></span></div>
+        <div className="info-item"><span className="info-label">IMU</span><span className="info-value" style={{fontSize:'18px',paddingTop:'4px'}}>MPU<span>9250</span></span></div>
+      </div>
+      <h2 className="section-title">Power & Logic</h2>
+      <p className="paragraph">The system is governed by an <strong>ESP32-S3</strong> microcontroller. To prevent the massive current spikes of 12 servos from crashing the logic, our custom PCB uses <strong>LM2596S regulators</strong> to completely isolate motor power from the multicore processing unit.</p>
+      <h2 className="section-title">Actuation & Perception</h2>
+      <p className="paragraph">Signals are sent via a <strong>PCA9685 PWM driver</strong>. The control policy relies on two critical sensors:</p>
+      <div className="bullet-list">
+        <div className="bullet-item"><div className="bullet-icon"/><span><strong>AS5600L Magnetic Encoders:</strong> For precise, non-contact absolute positioning of joints.</span></div>
+        <div className="bullet-item"><div className="bullet-icon"/><span><strong>MPU9250 IMU:</strong> A 9DOF sensor (Accelerometer, Gyroscope, Magnetometer) providing continuous state data.</span></div>
+      </div>
+    </div>
+  );
+}
+
+function PageSoftware() {
+  const [tab, setTab] = useState('control');
+  return (
+    <div className="page">
+      <div className="eyebrow">03 / Software</div>
+      <h1 className="title" style={{fontSize:'40px'}}>Software & Firmware</h1>
+      <div className="tabs">
+        <button className={`tab ${tab === 'control' ? 'active' : ''}`} onClick={() => setTab('control')}>Control (RL)</button>
+        <button className={`tab ${tab === 'firmware' ? 'active' : ''}`} onClick={() => setTab('firmware')}>ESP32-S3 Firmware</button>
+      </div>
+      {tab === 'control' && (
+        <div>
+          <h2 className="section-title">Actor-Critic Architecture (MJLab)</h2>
+          <p className="paragraph">Our RL simulation is built on MuJoCo using the GPU-accelerated mjlab framework. We use an <strong>Actor-Critic architecture</strong>, completely abandoning classical Inverse Kinematics. The network processes the State directly into joint-level commands, and the resulting Value Functions are exported as <strong>ONNX models</strong> for edge inference.</p>
+          <h2 className="section-title">Reward Shaping & Sim-to-Real</h2>
+          <p className="paragraph">We are actively iterating on reward shaping to avoid "local minima". Currently, it heavily incentivizes achieving a 1.0 m/s linear velocity. The <code>quadruped_robot.xml</code> environment mirrors the physical 2.5kg, 12-DoF hardware, modeling stall torques (2.45 N·m) and dynamic damping losses.</p>
+          <h2 className="section-title">How to Run</h2>
+          <p className="paragraph" style={{marginBottom:'10px'}}><strong>1. Install dependencies</strong></p>
+          <Terminal title="install"><span className="t-prompt">$ </span><span className="t-cmd">uv sync</span></Terminal>
+          <p className="paragraph" style={{marginTop:'24px',marginBottom:'10px'}}><strong>2. Train the RL Agent</strong></p>
+          <Terminal title="train"><span className="t-prompt">$ </span><span className="t-cmd">uv run train</span> Mjlab-Velocity-Flat-Quad-Bot <span className="t-str">--envs.scene.num-envs 1024</span></Terminal>
+          <p className="paragraph" style={{marginTop:'24px',marginBottom:'10px'}}><strong>3. Play the visualization</strong></p>
+          <Terminal title="play"><span className="t-prompt">$ </span><span className="t-cmd">uv run play</span> Mjlab-Velocity-Flat-Quad-Bot /path/to/log/files</Terminal>
+      <h2 className="section-title">Images</h2>
+	<Carousel slides={[
+  { src:"images/robot-movement.gif", caption:"Developement test of robot movement — MuJoCo" },
+  { src:"images/robot-stats.png",   caption:"Rewards graphics of robot learning — Wandb" },
+]} />
+        </div>
+      )}
+      {tab === 'firmware' && (
+        <div>
+          <h2 className="section-title">ESP32-S3 & Zenoh DDS</h2>
+          <p className="paragraph">The Firmware includes a <strong>PlatformIO project for an ESP32-S3</strong> to send PWM signals using a custom <code>PCA9685.h</code> library, and read RAW data from the 9DOF MPU9250 IMU.</p>
+          <p className="paragraph">To make communication between hardware and software entirely wireless, we use <strong>Zenoh</strong>. Via Wi-Fi, Zenoh acts as a layer to interact with ROS2 middleware through <code>zenoh-bridge-ros2dds</code>.</p>
+          <h2 className="section-title">Robot Operation & Network Setup</h2>
+          <p className="paragraph">On the first boot, the ESP32-S3 creates a Wi-Fi network. Connect to it to specify the <strong>SSID</strong>, <strong>Password</strong> and the <strong>Locator IP</strong>. This is saved in memory.</p>
+          <div className="status-badge"><div className="status-pulse"/>Builtin LED 2 is BLUE when communication is ready.</div>
+          <h2 className="section-title">Execution & Testing</h2>
+          <p className="paragraph" style={{marginBottom:'10px'}}><strong>1. Enable Bridge</strong></p>
+	  <p className="paragraph">Before starting the robot, make sure you have the Zenoh broker and Zenoh-DDS bridge running.</p>
+          <Terminal title="zenoh-bridge"><span className="t-prompt">$ </span><span className="t-cmd">zenoh-bridge-ros2dds</span></Terminal>
+          <p className="paragraph" style={{marginTop:'24px',marginBottom:'10px'}}><strong>2. IMU Sensor Madgwick Filter</strong></p>
+	  <p className="paragraph">After the calibration, you can now test the Madgwick filter to know if the IMU got correctly calibrated.</p>
+          <Terminal title="imu-filter"><span className="t-prompt">$ </span><span className="t-cmd">ros2 run</span> imu_filter_madgwick imu_filter_madgwick_node <span className="t-str">--ros-args</span> \{'\n'}    <span className="t-str">-r</span> imu/data_raw:=/imu/data_raw \{'\n'}    <span className="t-str">-r</span> imu/mag:=/imu/mag \{'\n'}    <span className="t-str">-p</span> use_mag:=true</Terminal>
+          <p className="paragraph" style={{marginTop:'24px',marginBottom:'10px'}}><strong>3. Visualizer</strong></p>
+          <Terminal title="rviz2"><span className="t-prompt">$ </span><span className="t-cmd">rviz2</span></Terminal>
+      <h2 className="section-title">Images</h2>
+	<Carousel slides={[
+  { src:"images/imu-movement.gif", caption:"IMU message representation - Rviz2" },
+]} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PageManagement() {
+  return (
+    <div className="page">
+      <div className="eyebrow">04 / Management</div>
+      <h1 className="title" style={{fontSize:'40px'}}>Scrum & Operations</h1>
+      <p className="paragraph">Building a complex hardware-software system requires intense cross-functional collaboration. We operate using strict <strong>Scrum operations</strong>, ensuring all mechanical, electronic, and software milestones are perfectly aligned.</p>
+      <h2 className="section-title">Synergies & Workflow</h2>
+      <p className="paragraph">The boundaries between hardware and software are erased in our team. Mechanics define the physical limits for the RL environment directly. Electronics optimize the PCB specifically to reduce overheating and wire the comunication buses correctly. Firmware software is focused on reducing the latency for ONNX inference and get all the data from periphericals and send the recived data to actuators as fast as possible.</p> 
+      <h2 className="section-title">Online management</h2>
+      <p className="paragraph">Every single step is logged via GitHub Projects and Kanban boards, ensuring full traceability from CAD design to Neural Network training.</p>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App() {
+  const [page, setPage]         = useState("home");
+  const [navHidden, setNavHidden] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
+
+  useEffect(() => {
+    document.body.classList.toggle('light', !darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      // Hide navbar only when sidebar is closed and scrolling down
+      if (!sidebarOpen) setNavHidden(y > lastY && y > 80);
+      lastY = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [sidebarOpen]);
+
+  // When sidebar opens, always show navbar (and hide hamburger from navbar)
+  useEffect(() => {
+    if (sidebarOpen) setNavHidden(false);
+  }, [sidebarOpen]);
+
+  const navigate = useCallback((id) => {
+    setPage(id);
+    setSidebarOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const pages = {
+    home:        <PageHome navigate={navigate} />,
+    mechanics:   <PageMechanics />,
+    electronics: <PageElectronics />,
+    software:    <PageSoftware />,
+    management:  <PageManagement />,
+  };
+
+  return (
+    <>
+      {/* NAVBAR — hamburger hidden when sidebar open */}
+      <nav className={`navbar ${navHidden ? 'hidden' : ''}`}>
+        <div className="nav-left">
+          {!sidebarOpen && (
+            <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+              <svg viewBox="0 0 24 24">
+                <line x1="3" y1="7" x2="21" y2="7"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="17" x2="21" y2="17"/>
+              </svg>
+            </button>
+          )}
+          <div className="nav-logo" onClick={() => navigate("home")}>
+            <div className="nav-logo-dot"/>
+            Quad<span style={{color:'var(--accent)'}}>Bot</span>
+          </div>
+        </div>
+
+        <div className="nav-links">
+          {NAV.map(n => (
+            <button key={n.id} className={`nav-link ${page === n.id ? 'active' : ''}`} onClick={() => navigate(n.id)}>
+              {n.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="nav-right">
+          <a href="https://github.com/Integrated-Project-2-2026-UVic-UCC/Team1" target="_blank" rel="noreferrer" className="repo-link">
+            <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          </a>
+        </div>
+      </nav>
+
+      {/* SIDEBAR OVERLAY */}
+      <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)}/>
+
+      {/* SIDEBAR */}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <div className="nav-logo-dot"/>
+            Quad<span style={{color:'var(--accent)'}}>Bot</span>
+          </div>
+          <button className="sidebar-close" onClick={() => setSidebarOpen(false)}>✕</button>
+        </div>
+
+        <div className="sidebar-section-label">Navigation</div>
+        <nav className="sidebar-nav">
+          <button className={`sidebar-link ${page === 'home' ? 'active' : ''}`} onClick={() => navigate('home')}>
+            <div className="sidebar-link-dot"/>Home
+          </button>
+          {NAV.map(n => (
+            <button key={n.id} className={`sidebar-link ${page === n.id ? 'active' : ''}`} onClick={() => navigate(n.id)}>
+              <div className="sidebar-link-dot"/>{n.label}
+            </button>
+          ))}
+        </nav>
+
+        <hr className="sidebar-divider"/>
+
+        <div className="sidebar-section-label">Preferences</div>
+        <button className="theme-toggle" onClick={() => setDarkMode(d => !d)}>
+          <span className="theme-icon">{darkMode ? '☀️' : '🌙'}</span>
+          {darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        </button>
+
+        <div className="sidebar-bottom">
+          <hr className="sidebar-divider"/>
+          <a href="https://github.com/Integrated-Project-2-2026-UVic-UCC/Team1" target="_blank" rel="noreferrer" style={{textDecoration:'none'}}>
+            <button className="sidebar-link" style={{width:'100%'}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}>
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              View Repository
+            </button>
+          </a>
+        </div>
+      </aside>
+
+      <main className="main-content" key={page}>
+        {pages[page]}
+      </main>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
