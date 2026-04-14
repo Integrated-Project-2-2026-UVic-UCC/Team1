@@ -26,6 +26,8 @@
             <site name="RL" pos="-0.1 0.06 0" size="0.01" rgba="0 0 1 0"/>
             <site name="RR" pos="-0.1 -0.06 0" size="0.01" rgba="1 1 0 0"/>
 
+            <!-- TODO: revisar los rangos de movimiento de las articulaciones  -->
+
             <!-- PATA DELANTERA IZQUIERDA (FL) -->
             <body name="FL_hip" pos="0.1 0.06 0">
                 <joint name="FL_hip_roll" axis="1 0 0" range="-30 30"/>
